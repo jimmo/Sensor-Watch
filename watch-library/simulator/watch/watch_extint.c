@@ -44,8 +44,10 @@ static watch_interrupt_trigger external_interrupt_alarm_trigger = INTERRUPT_TRIG
 #define BTN_ID_LIGHT 1
 #define BTN_ID_MODE 2
 static const uint8_t BTN_IDS[] = { BTN_ID_ALARM, BTN_ID_LIGHT, BTN_ID_MODE };
+static EM_BOOL btn_state[] = { 0, 0, 0 };
 static EM_BOOL watch_invoke_interrupt_callback(const uint8_t button_id, watch_interrupt_trigger trigger);
 
+#include <stdio.h>
 static EM_BOOL watch_invoke_key_callback(int eventType, const EmscriptenKeyboardEvent *keyEvent, void *userData) {
     if (debug_console_focused || keyEvent->repeat) return EM_FALSE;
 
@@ -88,6 +90,15 @@ static EM_BOOL watch_invoke_key_callback(int eventType, const EmscriptenKeyboard
     } else {
         // another kind of key
         return EM_FALSE;
+    }
+
+    if (eventType == EMSCRIPTEN_EVENT_KEYDOWN) {
+        if (btn_state[button_id]) {
+            return EM_FALSE;
+        }
+        btn_state[button_id] = true;
+    } else {
+        btn_state[button_id] = false;
     }
 
     watch_interrupt_trigger trigger = eventType == EMSCRIPTEN_EVENT_KEYDOWN ? INTERRUPT_TRIGGER_RISING : INTERRUPT_TRIGGER_FALLING;

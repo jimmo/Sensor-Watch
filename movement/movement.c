@@ -142,6 +142,7 @@ static inline void _movement_reset_inactivity_countdown(void) {
 
 static inline void _movement_enable_fast_tick_if_needed(void) {
     if (!movement_state.fast_tick_enabled) {
+        printf("enable fast tick\n");
         movement_state.fast_ticks = 0;
         watch_rtc_register_periodic_callback(cb_fast_tick, 128);
         movement_state.fast_tick_enabled = true;
@@ -153,6 +154,7 @@ static inline void _movement_disable_fast_tick_if_possible(void) {
         (movement_state.alarm_ticks == -1) &&
         ((movement_state.light_down_timestamp + movement_state.mode_down_timestamp + movement_state.alarm_down_timestamp) == 0)) {
         movement_state.fast_tick_enabled = false;
+        printf("disable fast tick\n");
         watch_rtc_disable_periodic_callback(128);
     }
 }
@@ -233,6 +235,7 @@ bool movement_default_loop_handler(movement_event_t event, movement_settings_t *
             break;
         case EVENT_MODE_LONG_PRESS:
             if (MOVEMENT_SECONDARY_FACE_INDEX && movement_state.current_watch_face == 0) {
+                printf("secondary face\n");
                 movement_move_to_face(MOVEMENT_SECONDARY_FACE_INDEX);
             } else {
                 movement_move_to_face(0);
@@ -606,6 +609,7 @@ void cb_light_btn_interrupt(void) {
 
 void cb_mode_btn_interrupt(void) {
     bool pin_level = watch_get_pin_level(BTN_MODE);
+    printf("mod btn %d\n", pin_level);
     _movement_reset_inactivity_countdown();
     event.event_type = _figure_out_button_event(pin_level, EVENT_MODE_BUTTON_DOWN, &movement_state.mode_down_timestamp);
 }
@@ -635,9 +639,13 @@ void cb_fast_tick(void) {
     if (movement_state.light_down_timestamp > 0)
         if (movement_state.fast_ticks - movement_state.light_down_timestamp == MOVEMENT_LONG_PRESS_TICKS + 1) 
             event.event_type = EVENT_LIGHT_LONG_PRESS;
-    if (movement_state.mode_down_timestamp > 0)
-        if (movement_state.fast_ticks - movement_state.mode_down_timestamp == MOVEMENT_LONG_PRESS_TICKS + 1) 
+    if (movement_state.mode_down_timestamp > 0) {
+        printf("%d\n", movement_state.fast_ticks - movement_state.mode_down_timestamp);
+        if (movement_state.fast_ticks - movement_state.mode_down_timestamp == MOVEMENT_LONG_PRESS_TICKS + 1) {
+            printf("mode long pres\n");
             event.event_type = EVENT_MODE_LONG_PRESS;
+        }
+    }
     if (movement_state.alarm_down_timestamp > 0)
         if (movement_state.fast_ticks - movement_state.alarm_down_timestamp == MOVEMENT_LONG_PRESS_TICKS + 1) 
             event.event_type = EVENT_ALARM_LONG_PRESS;
